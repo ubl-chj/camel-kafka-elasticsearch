@@ -1,0 +1,37 @@
+curl -XPUT 'localhost:9200/trellis-events?pretty' -H 'Content-Type: application/json' -d'
+{
+  "settings" : {
+    "number_of_shards" : 1
+  },
+  "mappings" : {
+    "as" : {
+        "properties": {
+          "@context": {
+            "type": "text"
+          },
+          "id": {
+            "type": "text"
+          },
+          "type": {
+            "type": "text"
+          },
+          "object": {
+            "properties": {
+              "id": {
+                "type": "text"
+              },
+              "type": {
+                "type": "text"
+              }
+            }
+          },
+          "published": {
+            "type": "date",
+            "format": "strict_date_optional_time||epoch_millis"
+          }
+        }
+    }
+  }
+}
+'
+

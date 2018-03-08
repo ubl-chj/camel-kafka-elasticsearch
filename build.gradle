@@ -17,7 +17,7 @@ plugins {
 }
 
 ext {
-    name = 'Camel Kafka ActivityStream Dataset'
+    name = 'Camel Kafka Elasticsearch'
     description = 'A Camel LDP implementation'
     vendor = 'pandorasystems'
     homepage = 'http://www.trellisldp.org'
@@ -31,7 +31,7 @@ configurations {
 }
 
 dependencies {
-    buildToolsConfig "cool.pandora:pandora-build-tools:0.1.3"
+    buildToolsConfig 'org.trellisldp:trellis-build-tools:0.2.0'
 }
 
 task processBuildTools(type: Copy) {
@@ -56,7 +56,7 @@ configure(allprojects) { project ->
     apply plugin: 'com.github.hierynomus.license'
 
     group = 'org.trellisldp.camel'
-    mainClassName = 'org.trellisldp.camel.kafka.activitystream.KafkaEventConsumer'
+    mainClassName = 'org.trellisldp.camel.kafka.elasticsearch.KafkaEventConsumer'
 
     repositories {
         jcenter()
@@ -65,15 +65,19 @@ configure(allprojects) { project ->
         maven {
             url "https://oss.sonatype.org/content/repositories/snapshots"
         }
-        maven {
-            url "http://clojars.org/repo/"
-        }
     }
 
     compileJava {
         sourceCompatibility = 1.8
         targetCompatibility = 1.8
         options.encoding = 'UTF-8'
+    }
+
+    gradle.projectsEvaluated {
+        tasks.withType(JavaCompile) {
+            options.compilerArgs.add("-Xlint:unchecked")
+            options.compilerArgs.add("-Xlint:deprecation")
+        }
     }
 
     compileTestJava {
@@ -86,31 +90,16 @@ configure(allprojects) { project ->
     ext {
         camelVersion = '2.20.0'
         camelLdpVersion = '0.1.0'
-        commonsIoVersion = "2.5"
-        commonsLangVersion = "3.5"
-        commonsCsvVersion = "1.4"
-        commonsRdfJenaVersion = "0.3.0-incubating"
-        commonsRdfVersion = '0.3.0-incubating'
-        dexxcollectionVersion = '0.6'
-        guavaVersion = "20.0"
-        httpclientVersion = "4.5.3"
-        httpcoreVersion = "4.4.6"
         jacksonVersion = "2.9.0"
-        jsonldVersion = "0.11.1"
-        thriftVersion = "0.9.3"
-        trellisApiVersion = "0.3.0"
-        trellisIoJenaVersion = '0.2.1'
-        trellisVocabularyVersion = '0.1.0'
+        elasticsearchVersion = "6.2.2"
+
         /* Testing */
         junitVersion = '5.0.1'
         junitPlatformVersion = '1.0.1'
         jaxbVersion = '2.3.0'
         jacocoVersion = '0.7.9'
-        jenaVersion = '3.5.0'
-        activationVersion = '1.1.1'
         logbackVersion = '1.2.3'
         apiguardianVersion = '1.0.0'
-        trellisIoJenaVersion = '0.2.1'
 
         camelVersionRange = '[2.16,3)'
         projectOsgiVersion = project.version.replaceAll("-SNAPSHOT", ".SNAPSHOT")
@@ -124,28 +113,17 @@ configure(allprojects) { project ->
     }
 
     def dockerResourceDir = "${rootProject.buildDir}/resources/main/docker"
-    def mavenInstallPath = "repository/org/trellisldp/camel"
 
     docker {
-        name 'trellisldp/activitystream-dataset'
+        name 'trellisldp/activitystream-elasticsearch'
         tags "${version}"
         dockerfile file("${dockerResourceDir}/Dockerfile")
-        files "activitystream-dataset/build/distributions/activitystream-dataset-${version}.tar",
+        files "activitystream-elasticsearch/build/distributions/activitystream-elasticsearch-${version}.tar",
                 "${dockerResourceDir}/entrypoint.sh"
         // copySpec.from("${buildDir}/maven").into("${mavenInstallPath}")
         pull true
         noCache true
     }
-
-    def homeDir = System.getProperty('user.home')
-    def mavenLocal = new File(homeDir, ".m2/repository/org/trellisldp/camel")
-
-    task copyTask(type: Copy) {
-        from mavenLocal
-        into "${rootProject.buildDir}/maven"
-    }
-
-    copyTask.dependsOn install
 
     license {
         include "**/*.java"
@@ -176,12 +154,6 @@ configure(subprojects) { subproject ->
         delete "${projectDir}/settings.gradle", "${projectDir}/docs"
     }
 
-    checkstyle {
-        configFile = rootProject.file('build/checkstyle/checkstyle.xml')
-        configProperties.checkstyleConfigDir = rootProject.file('build/checkstyle/')
-        toolVersion = "8.1"
-    }
-
     task processConfig(type: Copy) {
         from('src/main/resources/cfg') {
             include '**/*.cfg'
@@ -204,7 +176,7 @@ configure(subprojects) { subproject ->
     }
 
     jacoco {
-        toolVersion = "0.7.9"
+        toolVersion = "0.8.0"
     }
 
     publishing {
@@ -235,28 +207,6 @@ configure(subprojects) { subproject ->
 
             developers {
                 developer {
-                    id 'acoburn'
-                    name 'Aaron Coburn'
-                    email 'acoburn @ (domain of organization url)'
-                    organization 'Amherst College'
-                    organizationUrl 'https://www.amherst.edu'
-                    roles {
-                        role 'developer'
-                    }
-                    timezone '-5'
-                }
-                developer {
-                    id 'bseeger'
-                    name 'Bethany Seeger'
-                    email 'bseeger @ (domain of organization url)'
-                    organization 'Amherst College'
-                    organizationUrl 'https://www.amherst.edu'
-                    roles {
-                        role 'developer'
-                    }
-                    timezone '-5'
-                }
-                developer {
                     id 'christopher-johnson'
                     name 'Christopher Johnson'
                     email 'chjohnson @ (domain of organization url)'
@@ -270,9 +220,9 @@ configure(subprojects) { subproject ->
             }
 
             scm {
-                connection 'scm:git:git://github.com/ub-leipzig/camel-kafka-activitystream-dataset.git'
-                developerConnection 'scm:git:git@github.com/ub-leipzig/camel-kafka-activitystream-dataset.git'
-                url 'https://github.com/ub-leipzig/camel-kafka-activitystream-dataset/'
+                connection 'scm:git:git://github.com/ub-leipzig/camel-kafka-elasticsearch-dataset.git'
+                developerConnection 'scm:git:git@github.com/ub-leipzig/camel-kafka-elasticsearch-dataset.git'
+                url 'https://github.com/ub-leipzig/camel-kafka-elasticsearch-dataset/'
                 tag 'HEAD'
             }
 
@@ -295,70 +245,54 @@ configure(subprojects) { subproject ->
         repositoryUrl = 'https://oss.sonatype.org/service/local/staging/deploy/maven2/'
         snapshotRepositoryUrl = 'https://oss.sonatype.org/content/repositories/snapshots/'
     }
-}
 
-project("camel-kafka-karaf") {
-    description = 'Karaf Provisioning Features for Camel-Kafka services'
-
-    processResources {
-        outputs.upToDateWhen { false }
-        expand project.properties
-    }
-
-    artifacts {
-        archives(file('build/resources/main/features.xml')) {
-            classifier 'features'
-            type 'xml'
+    javadoc {
+        doFirst {
+            options.addStringOption('-module-path', classpath.asPath)
+            options.addBooleanOption('html5', true)
+        }
+        destinationDir = new File(projectDir, "docs/${version}")
+        options {
+            links "https://docs.oracle.com/javase/8/docs/api/"
         }
     }
 }
 
-project("activitystream-dataset") {
+project("activitystream-elasticsearch") {
     description = 'A Camel Kafka service'
     dependencies {
+        compile group: 'net.java.dev.jna', name: 'jna', version: '4.5.1'
+        compile group: 'javax.activation', name: 'activation', version: '1.1.1'
+        compile group: 'javax.xml.bind', name: 'jaxb-api', version: '2.3.0'
+        compile group: 'org.elasticsearch.client', name: 'elasticsearch-rest-high-level-client', version: elasticsearchVersion
         implementation group: 'org.apache.camel', name: 'camel-core', version: camelVersion
         implementation group: 'org.trellisldp', name: 'camel-ldp', version: camelLdpVersion
         implementation group: 'org.apache.camel', name: 'camel-kafka', version: camelVersion
         implementation group: 'org.apache.camel', name: 'camel-jackson', version: camelVersion
-        implementation group: 'org.apache.jena', name: 'jena-osgi', version: jenaVersion
-        implementation group: 'org.apache.commons', name: 'commons-rdf-api', version: commonsRdfVersion
-        implementation group: 'org.trellisldp', name: 'trellis-api', version: trellisApiVersion
-        implementation group: 'org.apache.commons', name: 'commons-rdf-jena', version: commonsRdfVersion
         implementation group: 'ch.qos.logback', name: 'logback-classic', version: logbackVersion
-        compile group: 'org.apache.jena', name: 'jena-fuseki-embedded', version: '3.5.0'
-        testImplementation group: 'org.apache.jena', name: 'jena-osgi', version: jenaVersion
-        testCompile group: 'org.apache.jena', name: 'jena-fuseki-embedded', version: '3.5.0'
-        testImplementation group: 'org.trellisldp', name: 'trellis-io-jena', version: trellisIoJenaVersion
+        testImplementation group: 'org.apache.camel', name: 'camel-http4', version: camelVersion
         testImplementation group: 'org.apache.camel', name: 'camel-kafka', version: camelVersion
         testImplementation group: 'org.apache.camel', name: 'camel-jackson', version: camelVersion
-        testImplementation group: 'org.apiguardian', name: 'apiguardian-api', version: apiguardianVersion
         testImplementation group: 'org.junit.platform', name: 'junit-platform-runner', version: junitPlatformVersion
         testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version: junitVersion
         testImplementation group: 'org.apache.camel', name: 'camel-test', version: camelVersion
         testImplementation group: 'javax.xml.bind', name: 'jaxb-api', version: jaxbVersion
         testImplementation group: 'ch.qos.logback', name: 'logback-classic', version: logbackVersion
-        testCompile group: 'org.apache.camel', name: 'camel-test-blueprint', version: camelVersion
-        testImplementation group: 'javax.activation', name: 'activation', version: activationVersion
     }
 
     jar {
         manifest {
             attributes 'Import-Package': "org.apache.camel,${defaultOsgiImports}",
-                    'Export-Package': "org.trellisldp.camel.kafka.activitystream.dataset;version=${projectOsgiVersion}"
+                    'Export-Package': "org.trellisldp.camel.kafka.elasticsearch.dataset;version=${projectOsgiVersion}"
         }
     }
 
     artifacts {
-        archives(file('build/cfg/main/org.trellisldp.camel.kafka.activitystream.cfg')) {
+        archives(file('build/cfg/main/org.trellisldp.camel.kafka.elasticsearch.cfg')) {
             classifier 'configuration'
             type 'cfg'
         }
     }
 }
 
-task submoduleUpdate(type: Exec) {
-    description = 'Updates and merges submodules'
-    executable = 'git'
-    args = ['submodule', 'update', '--remote', '--merge']
-}
 

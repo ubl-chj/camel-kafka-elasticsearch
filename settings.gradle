@@ -1,3 +1,2 @@
-include 'activitystream-dataset'
-include 'camel-kafka-karaf'
+include 'activitystream-elasticsearch'
 

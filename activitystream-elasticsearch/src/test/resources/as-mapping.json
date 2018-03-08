@@ -1,0 +1,29 @@
+{
+  "activity-stream": {
+    "properties": {
+      "@context": {
+        "type": "text"
+      },
+      "id": {
+        "type": "text"
+      },
+      "type": {
+        "type": "text"
+      },
+      "object": {
+        "properties": {
+          "id": {
+            "type": "text"
+          },
+          "type": {
+            "type": "text"
+          }
+        }
+      },
+      "published": {
+        "type": "date",
+        "format": "strict_date_optional_time||epoch_millis"
+      }
+    }
+  }
+}

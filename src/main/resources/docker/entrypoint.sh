@@ -1,2 +1,2 @@
 #!/usr/bin/env bash
-exec /opt/activitystream-dataset/bin/activitystream-dataset
+exec /opt/activitystream-elasticsearch/bin/activitystream-elasticsearch

@@ -1,0 +1,11 @@
+curl -XPUT 'localhost:9200/trellis-events/as/3?pretty' -H 'Content-Type: application/json' -d'
+{
+  "@context" : "https://www.w3.org/ns/activitystreams",
+  "id" : "urn:uuid:8e3ccce1-5438-4c00-980b-31e4b9664241",
+  "object" : {
+    "id" : "http://trellis:8080/ldp-test-e64b4e6f-2034-4b9d-8232-500a12242651",
+    "type" : [ "http://www.w3.org/ns/ldp#RDFSource" ]
+  },
+  "published" : "2018-03-07T16:28:32.836256Z"
+}
+'

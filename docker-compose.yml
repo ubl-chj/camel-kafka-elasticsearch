@@ -1,30 +1,52 @@
 version: "3.2"
 
 services:
-  activitystream-dataset:
-    image: trellisldp/activitystream-dataset
-    container_name: activitystream-dataset
-    networks:
-      - trelliscompose_default
-    ports:
-      - "3330:3330"
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:6.2.2
+    container_name: elasticsearch
+    environment:
+      - cluster.name=docker-cluster
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - xpack.security.enabled=false
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
     volumes:
-      - activitystream-dataset-volume:/mnt/fuseki-data/activitystream
-      - resource-dataset-volume:/mnt/fuseki-data/resources
+      - esdata1:/usr/share/elasticsearch/data
+    ports:
+      - 9200:9200
+    networks:
+      - esnet
+  elasticsearch2:
+    image: docker.elastic.co/elasticsearch/elasticsearch:6.2.2
+    container_name: elasticsearch2
+    environment:
+      - cluster.name=docker-cluster
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - "discovery.zen.ping.unicast.hosts=elasticsearch"
+      - xpack.security.enabled=false
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - esdata2:/usr/share/elasticsearch/data
+    networks:
+      - esnet
+  kibana:
+    image: docker.elastic.co/kibana/kibana:6.2.2
+    ports:
+      - 5601:5601
+    networks:
+      - esnet
+volumes:
+  esdata1:
+    driver: local
+  esdata2:
+    driver: local
 
 networks:
-  trelliscompose_default:
-    external: true
-
-volumes:
-  activitystream-dataset-volume:
-    driver_opts:
-      type: none
-      device: /mnt/fuseki-data/activitystream
-      o: bind
-
-  resource-dataset-volume:
-    driver_opts:
-      type: none
-      device: /mnt/fuseki-data/resources
-      o: bind
+  esnet:
